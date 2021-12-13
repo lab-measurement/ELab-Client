@@ -6,7 +6,7 @@
 /.build
 /pod2htmd.tmp
 /pod2htmi.tmp
-/eLab-API-*
+/eLab-Client-*
 /cover_db
 /dzil.spec
 

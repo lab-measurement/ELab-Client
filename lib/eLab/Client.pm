@@ -1,4 +1,4 @@
-package eLab::API;
+package eLab::Client;
 # ABSTRACT: Access the eLabFTW API with Perl
 
 use strict;
