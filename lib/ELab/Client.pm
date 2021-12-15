@@ -117,7 +117,8 @@ Lists experiments, with maximum number limit and starting at offset.
 
   my $a = $elab->get_all_experiments(limit => 15, offset => 0);
 
-The return value is a hash reference.
+The return value is an array reference, where each element is a hash reference
+describing an experiment (not fully, but abbreviated).
 
 =cut
 
@@ -134,22 +135,47 @@ sub get_all_experiments {
 
 =head2 get_experiment
 
+Returns an experiment.
+
   my $e = $elab->get_experiment($id);
+
+The return value is a hash reference with the full experiment information.
 
 =cut
 
 sub get_experiment {
   my $self = shift;
   my $id = shift;
-
   return decode_json $self->elab_get("experiments/$id");
 }
 
 
-# missing: get_all_items
+=head2 get_all_items
+
+Lists database items, with maximum number limit and starting at offset.
+
+  my $a = $elab->get_all_items(limit => 25, offset => 0);
+
+The return value is an array reference, where each element is a hash reference
+corresponding to a database item.
+
+=cut
+
+sub get_all_items {
+  my $self = shift;
+  my (%args) = validated_hash(
+    \@_,
+    limit  => { isa => 'Int', default => 25 },
+    offset => { isa => 'Int', default => 0 },
+  );
+  return decode_json $self->elab_get("items/".$self->buildQuery(%args));
+}
+
 
 
 =head2 get_item
+
+Returns a database item.
 
   my $i = $elab->get_item($id);
 
@@ -158,25 +184,29 @@ sub get_experiment {
 sub get_item {
   my $self = shift;
   my $id = shift;
-
-  return $self->elab_get("items/$id");
+  return decode_json $self->elab_get("items/$id");
 }
 
 
 =head2 get_items_types
 
+Returns a list of database item types.
+
   my $t = $elab->get_items_types();
+
+The return value is an array reference ...
 
 =cut
 
 sub get_items_types {
   my $self = shift;
-
-  return $self->elab_get("items_types/");
+  return decode_json $self->elab_get("items_types/");
 }
 
 
 =head2 get_tags
+
+Returns the tags of the team.
 
   my $t = $elab->get_tags();
 
@@ -184,15 +214,30 @@ sub get_items_types {
 
 sub get_tags {
   my $self = shift;
-
-  return $self->elab_get("tags/");
+  return decode_json $self->elab_get("tags/");
 }
 
 
-# missing: get_upload
+=head2 get_upload
+
+Get an uploaded file from its id
+
+  my $data = $elab->get_upload($id);
+
+The result is the raw binary data of the uploaded file.
+
+=cut
+
+sub get_upload {
+  my $self = shift;
+  my $id = shift;
+  return $self->elab_get("uploads/$id");
+}
 
 
 =head2 get_status
+
+Get a list of possible experiment states (statuses?)...
 
   my $s = $elab->get_status();
 
@@ -200,8 +245,7 @@ sub get_tags {
 
 sub get_status {
   my $self = shift;
-
-  return $self->elab_get("status/");
+  return decode_json $self->elab_get("status/");
 }
 
 
@@ -213,8 +257,7 @@ sub get_status {
 
 sub get_all_templates {
   my $self = shift;
-
-  return $self->elab_get("templates/");
+  return decode_json $self->elab_get("templates/");
 }
 
 
@@ -227,24 +270,93 @@ sub get_all_templates {
 sub get_template {
   my $self = shift;
   my $id = shift;
-
-  return $self->elab_get("templates/$id");
+  return decode_json $self->elab_get("templates/$id");
 }
 
 
-# missing: post_experiment
+=head2 post_experiment
+
+NOT WORKING YET
+
+=cut
+
+sub post_experiment {
+  my $self = shift;
+  my $id = shift;
+  my %args = validated_hash(
+    \@_,
+    title  => { isa => 'Str', optional => 1 },
+    date => { isa => 'Str', optional => 1 },
+    body => { isa => 'Str', optional => 1 },
+    bodyappend => { isa => 'Str', optional => 1 },
+  );
+  return decode_json $self->elab_post("experiments/$id".$self->buildQuery(%args));
+}
 
 
-# missing: post_item
+=head2 post_item
+
+=cut
+
+sub post_item {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    title  => { isa => 'Str' },
+    date => { isa => 'Str' },
+    body => { isa => 'Str' },
+    bodyappend => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("items/$id"."?".$self->buildQuery(%args));
+}
 
 
-# missing: post_template
+=head2 post_template
+
+=cut
+
+sub post_template {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    title  => { isa => 'Str' },
+    date => { isa => 'Str' },
+    body => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("templates/$id"."?".$self->buildQuery(%args));
+}
 
 
-# missing: add_link_to_experiment
+=head2 add_link_to_experiment
+
+=cut
+
+sub add_link_to_experiment {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    link  => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("experiments/$id"."?".$self->buildQuery(%args));
+}
 
 
-# missing: add_link_to_item
+=head2 add_link_to_item
+
+=cut
+
+sub add_link_to_item {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    link  => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("items/$id"."?".$self->buildQuery(%args));
+}
 
 
 # missing: upload_to_experiment
