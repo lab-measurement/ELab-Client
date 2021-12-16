@@ -23,6 +23,22 @@ has endpoint => (
   default => 'api/v1/'
 );
 
+=head1 SYNOPSYS
+
+  use ELab::Client;
+
+  my $elab = ELab::Client->new(
+        host => 'https://elab.somewhere.de/',
+        token => 'ae...d4',
+  );
+
+  my $e = $elab->post_experiment(4,
+                    title => "New experiment title",
+                    body => "The new body text"
+        );
+
+This module is work in progress, and coverage of the API is by far not complete yet.
+
 =head1 METHODS
 
 =cut
@@ -45,13 +61,16 @@ sub elab_get {
 sub elab_post {
   my $self = shift;
   my $url = shift;
-  my $result = $self->POST($self->endpoint().$url);
+  my $data = shift;
+  $data =~ s/^\?//;  # buildQuery starts with "?" (makes no sense here)
+  my $headers = { 'Content-Type' => 'application/x-www-form-urlencoded' };
+  my $result = $self->POST($self->endpoint().$url, $data, $headers);
   return undef unless $result->responseCode() eq '200';
   return $result->responseContent();
 }
 
 
-# from here on we try to follow elabapy
+# from here on we try to follow elabapy in terms of function names
 
 =head2 create_experiment
 
@@ -276,25 +295,33 @@ sub get_template {
 
 =head2 post_experiment
 
-NOT WORKING YET
+  my $e = $elab->post_experiment(13,
+                    title => "Updated experiment title",
+                    body => "Updated experiment body text"
+        );
 
 =cut
 
 sub post_experiment {
   my $self = shift;
   my $id = shift;
-  my %args = validated_hash(
+  my (%args) = validated_hash(
     \@_,
     title  => { isa => 'Str', optional => 1 },
     date => { isa => 'Str', optional => 1 },
     body => { isa => 'Str', optional => 1 },
     bodyappend => { isa => 'Str', optional => 1 },
   );
-  return decode_json $self->elab_post("experiments/$id".$self->buildQuery(%args));
+  return decode_json $self->elab_post("experiments/$id", $self->buildQuery(%args));
 }
 
 
 =head2 post_item
+
+  my $i = $elab->post_item(4,
+                    title => "Database item",
+                    body => "here are the bodies"
+        );
 
 =cut
 
@@ -303,12 +330,12 @@ sub post_item {
   my $id = shift;
   my (%args) = validated_hash(
     \@_,
-    title  => { isa => 'Str' },
-    date => { isa => 'Str' },
-    body => { isa => 'Str' },
-    bodyappend => { isa => 'Str' },
+    title  => { isa => 'Str', optional => 1 },
+    date => { isa => 'Str', optional => 1 },
+    body => { isa => 'Str', optional => 1 },
+    bodyappend => { isa => 'Str', optional => 1 },
   );
-  return decode_json $self->elab_post("items/$id"."?".$self->buildQuery(%args));
+  return decode_json $self->elab_post("items/$id", $self->buildQuery(%args));
 }
 
 
@@ -321,11 +348,11 @@ sub post_template {
   my $id = shift;
   my (%args) = validated_hash(
     \@_,
-    title  => { isa => 'Str' },
-    date => { isa => 'Str' },
-    body => { isa => 'Str' },
+    title  => { isa => 'Str', optional => 1 },
+    date => { isa => 'Str', optional => 1 },
+    body => { isa => 'Str', optional => 1 },
   );
-  return decode_json $self->elab_post("templates/$id"."?".$self->buildQuery(%args));
+  return decode_json $self->elab_post("templates/$id", $self->buildQuery(%args));
 }
 
 
@@ -340,7 +367,7 @@ sub add_link_to_experiment {
     \@_,
     link  => { isa => 'Str' },
   );
-  return decode_json $self->elab_post("experiments/$id"."?".$self->buildQuery(%args));
+  return decode_json $self->elab_post("experiments/$id", $self->buildQuery(%args));
 }
 
 
@@ -355,7 +382,7 @@ sub add_link_to_item {
     \@_,
     link  => { isa => 'Str' },
   );
-  return decode_json $self->elab_post("items/$id"."?".$self->buildQuery(%args));
+  return decode_json $self->elab_post("items/$id", $self->buildQuery(%args));
 }
 
 
