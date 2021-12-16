@@ -8,8 +8,15 @@ use Moose;
 use MooseX::NonMoose;
 use MooseX::Params::Validate;
 use JSON;
+use File::Slurp;
 
 extends 'REST::Client';
+
+has host => (
+  is => 'ro',
+  isa => 'Str',
+  required => 1,
+);
 
 has token => (
   is => 'ro',
@@ -386,11 +393,23 @@ sub add_link_to_item {
 }
 
 
-# missing: upload_to_experiment
+=head2 upload_to_experiment
 
+THIS DOES NOT WORK YET
 
-# missing: upload_to_item
+=cut
 
+sub upload_to_experiment {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    file  => { isa => 'Str' },
+  );
+  my $content = read_file($args{file});
+  return $self->getUseragent()->post($self->host().$self->endpoint()."experiments/$id", 
+        [undef, $args{file}, Authorization => $self->token(), Content => $content]);
+}
 
 # missing: upload_to_item
 
