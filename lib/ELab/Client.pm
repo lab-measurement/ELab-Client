@@ -8,7 +8,7 @@ use Moose;
 use MooseX::NonMoose;
 use MooseX::Params::Validate;
 use JSON;
-use File::Slurp;
+use HTTP::Request::Common qw '';
 
 extends 'REST::Client';
 
@@ -61,6 +61,14 @@ sub elab_get {
   my $self = shift;
   my $url = shift;
   my $result = $self->GET($self->endpoint().$url);
+  return undef unless $result->responseCode() eq '200';
+  return $result->responseContent();
+}
+
+sub elab_delete {
+  my $self = shift;
+  my $url = shift;
+  my $result = $self->DELETE($self->endpoint().$url);
   return undef unless $result->responseCode() eq '200';
   return $result->responseContent();
 }
@@ -395,7 +403,7 @@ sub add_link_to_item {
 
 =head2 upload_to_experiment
 
-THIS DOES NOT WORK YET
+  my $e = $elab->upload_to_experiment(13, file => "mauterndorf.jpg");
 
 =cut
 
@@ -406,36 +414,141 @@ sub upload_to_experiment {
     \@_,
     file  => { isa => 'Str' },
   );
-  my $content = read_file($args{file});
-  return $self->getUseragent()->post($self->host().$self->endpoint()."experiments/$id", 
-        [undef, $args{file}, Authorization => $self->token(), Content => $content]);
+  my $request = HTTP::Request::Common::POST(
+        $self->host().$self->endpoint()."experiments/$id", 
+        {
+          file => [ $args{file} ]
+        },
+        Content_Type => 'form-data', 
+        Authorization => $self->token(),
+      );
+  return decode_json $self->getUseragent()->request($request)->decoded_content(); 
 }
 
-# missing: upload_to_item
+
+=head2 upload_to_item
+
+  my $e = $elab->upload_to_item(13, file => "mauterndorf.jpg");
+
+=cut
+
+sub upload_to_item {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    file  => { isa => 'Str' },
+  );
+  my $request = HTTP::Request::Common::POST(
+        $self->host().$self->endpoint()."items/$id", 
+        {
+          file => [ $args{file} ]
+        },
+        Content_Type => 'form-data', 
+        Authorization => $self->token(),
+      );
+  return decode_json $self->getUseragent()->request($request)->decoded_content(); 
+}
 
 
-# missing: add_tag_to_experiment
+=head2 add_tag_to_experiment
+
+=cut
+
+sub add_tag_to_experiment {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    tag  => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("experiments/$id", $self->buildQuery(%args));
+}
 
 
-# missing: add_tag_to_item
+=head2 add_tag_to_item
+
+=cut
+
+sub add_tag_to_item {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    tag  => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("items/$id", $self->buildQuery(%args));
+}
 
 
-# missing: get_backup_zip
+=head2 get_backup_zip
+
+=cut
+
+sub get_backup_zip {
+  my $self = shift;
+  my $datespan = shift;
+  return $self->elab_get("backupzip/$datespan");
+}
 
 
-# missing: get_bookable
+=head2 get_bookable
+
+=cut
+
+sub get_bookable {
+  my $self = shift;
+  return decode_json $self->elab_get("bookable/");
+}
 
 
-# missing: create_event
+=head2 create_event
+
+=cut
+
+sub create_event {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    start  => { isa => 'Str' },
+    end  => { isa => 'Str' },
+    title  => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("events/$id", $self->buildQuery(%args));
+}
 
 
-# missing: get_event
+=head2 get_event
+
+=cut
+
+sub get_event {
+  my $self = shift;
+  my $id = shift;
+  return decode_json $self->elab_get("events/$id");
+}
 
 
-# missing: get_all_events
+=head2 get_all_events
+
+=cut
+
+sub get_all_events {
+  my $self = shift;
+  return decode_json $self->elab_get("events/");
+}
 
 
-# missing: destroy_event
+=head2 destroy_event
+
+=cut
+
+sub destroy_event {
+  my $self = shift;
+  my $id = shift;
+  return decode_json $self->elab_delete("events/$id");
+}
 
 
 no Moose;
