@@ -25,4 +25,4 @@ cpanm -n HTTP::Server::Simple
 # Run tests (user tests as well as maintainer tests)
 #
 
-prove --verbose -l -s -r t
+prove --verbose -l -s -r t xt
