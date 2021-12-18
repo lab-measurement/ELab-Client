@@ -144,7 +144,7 @@ sub add_link_to_experiment {
 
 =head3 add_link_to_item($id, ...)
 
-  my $result = add_link_to_item(2, link => 5)
+  my $result = add_link_to_item(2, link => 5);
 
 Adds to a database item a link to another database item with given id.
 Returns a hash reference with status information.
@@ -162,27 +162,43 @@ sub add_link_to_item {
 }
 
 
+=head3 add_tag_to_experiment($id, ...)
 
-#########
-# sorted until here
-#########
+  my $result = add_tag_to_experiment(2, tag => "awesome");
 
-
-
-=head3 create_experiment()
-
-  my $e = $elab->create_experiment();
-
-Creates a new experiment. The return value is a hash reference with fields
-
-  result      string       'success' or error message
-  id          string       id of the new experiment
+Adds to an experiment the given tag (a string).
+Returns a hash reference with status information.
 
 =cut
 
-sub create_experiment {
+sub add_tag_to_experiment {
   my $self = shift;
-  return decode_json $self->elab_post("experiments");
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    tag  => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("experiments/$id", $self->buildQuery(%args));
+}
+
+
+=head3 add_tag_to_item($id, ...)
+
+  my $result = add_tag_to_item(42, tag => "broken");
+
+Adds to a database item the given tag (a string).
+Returns a hash reference with status information.
+
+=cut
+
+sub add_tag_to_item {
+  my $self = shift;
+  my $id = shift;
+  my (%args) = validated_hash(
+    \@_,
+    tag  => { isa => 'Str' },
+  );
+  return decode_json $self->elab_post("items/$id", $self->buildQuery(%args));
 }
 
 
@@ -191,10 +207,7 @@ sub create_experiment {
   my $e = $elab->create_item($type);
 
 Creates a new database item of type $type. The return value is a hash 
-reference with fields
-
-  result      string       'success' or error message
-  id          string       id of the new item
+reference with status information and the id of the new item.
 
 =cut
 
@@ -205,16 +218,27 @@ sub create_item {
 }
 
 
-=head3 create_template
+=head3 create_experiment()
 
-Creates a new template:
+  my $e = $elab->create_experiment();
+
+Creates a new experiment. The return value is a hash reference with status 
+information and the id of the new experiment.
+
+=cut
+
+sub create_experiment {
+  my $self = shift;
+  return decode_json $self->elab_post("experiments");
+}
+
+
+=head3 create_template()
 
   my $t = $elab->create_template();
 
-The return value is a hash reference with fields
-
-  result      string       'success' or error message
-  id          string       id of the new template
+Creates a new template. The return value is a hash reference with status 
+information and the id of the new template.
 
 =cut
 
@@ -224,12 +248,42 @@ sub create_template {
 }
 
 
-=head3 get_all_experiments
+=head3 get_upload($id)
 
-Lists experiments, with maximum number limit and starting at offset.
+  my $data = $elab->get_upload($id);
+
+Get an uploaded file from its id.
+The result is the raw binary data of the uploaded file.
+
+=cut
+
+sub get_upload {
+  my $self = shift;
+  my $id = shift;
+  return $self->elab_get("uploads/$id");
+}
+
+
+=head3 get_bookable()
+
+  my $b = $elab->get_bookable();
+
+Returns a list of bookable items (i.e., equipment etc). The result is an
+array reference.
+
+=cut
+
+sub get_bookable {
+  my $self = shift;
+  return decode_json $self->elab_get("bookable/");
+}
+
+
+=head3 get_all_experiments(...)
 
   my $a = $elab->get_all_experiments(limit => 15, offset => 0);
 
+Lists the stored experiments, at most limit and starting at offset.
 The return value is an array reference, where each element is a hash reference
 describing an experiment (not fully, but abbreviated).
 
@@ -246,13 +300,12 @@ sub get_all_experiments {
 }
 
 
-=head3 get_experiment
-
-Returns an experiment.
+=head3 get_experiment($id)
 
   my $e = $elab->get_experiment($id);
 
-The return value is a hash reference with the full experiment information.
+Returns an experiment. The return value is a hash reference with the full 
+experiment information.
 
 =cut
 
@@ -263,12 +316,11 @@ sub get_experiment {
 }
 
 
-=head3 get_all_items
-
-Lists database items, with maximum number limit and starting at offset.
+=head3 get_all_items(...)
 
   my $a = $elab->get_all_items(limit => 25, offset => 0);
 
+Lists database items, with maximum number limit and starting at offset.
 The return value is an array reference, where each element is a hash reference
 corresponding to a database item.
 
@@ -285,12 +337,12 @@ sub get_all_items {
 }
 
 
-
-=head3 get_item
-
-Returns a database item.
+=head3 get_item($id)
 
   my $i = $elab->get_item($id);
+
+Returns a database item. The return value is a hash reference with the full
+item information.
 
 =cut
 
@@ -301,11 +353,11 @@ sub get_item {
 }
 
 
-=head3 get_tags
-
-Returns the tags of the team.
+=head3 get_tags()
 
   my $t = $elab->get_tags();
+
+Returns the tags that are in use.
 
 =cut
 
@@ -315,27 +367,13 @@ sub get_tags {
 }
 
 
-=head3 get_upload
-
-Get an uploaded file from its id
-
-  my $data = $elab->get_upload($id);
-
-The result is the raw binary data of the uploaded file.
-
-=cut
-
-sub get_upload {
-  my $self = shift;
-  my $id = shift;
-  return $self->elab_get("uploads/$id");
-}
-
-
-
-=head3 get_all_templates
+=head3 get_all_templates()
 
   my $t = $elab->get_all_templates();
+
+Lists the available templates.
+The return value is an array reference, where each element is a hash reference
+describing a template.
 
 =cut
 
@@ -349,6 +387,9 @@ sub get_all_templates {
 
   my $t = $elab->get_template($id);
 
+Returns a template. The return value is a hash reference with the template
+information.
+
 =cut
 
 sub get_template {
@@ -358,12 +399,22 @@ sub get_template {
 }
 
 
-=head3 post_experiment
+=head3 post_experiment($id, ...)
 
   my $e = $elab->post_experiment(13,
                     title => "Updated experiment title",
                     body => "Updated experiment body text"
         );
+
+Updates an experiment, overwriting previous values or (in the case of
+'bodyappend') appending to the existing text. The following parameters can
+be given:
+
+  category    The (id of the) experiment status
+  title       The experiment title
+  date        The date
+  body        The experiment body text
+  bodyappend  Text that is appended to the experiment body text
 
 =cut
 
@@ -372,6 +423,7 @@ sub post_experiment {
   my $id = shift;
   my (%args) = validated_hash(
     \@_,
+    category => { isa => 'Str', optional => 1 },
     title  => { isa => 'Str', optional => 1 },
     date => { isa => 'Str', optional => 1 },
     body => { isa => 'Str', optional => 1 },
@@ -385,8 +437,18 @@ sub post_experiment {
 
   my $i = $elab->post_item(4,
                     title => "Database item",
-                    body => "here are the bodies"
+                    body => "This is a piece of expensive equipment."
         );
+
+Updates a database item, overwriting previous values or (in the case of
+'bodyappend') appending to the existing text. The following parameters can
+be given:
+
+  category    The (id of the) database item type
+  title       The item title
+  date        The date
+  body        The item body text
+  bodyappend  Text that is appended to the item body text
 
 =cut
 
@@ -395,6 +457,7 @@ sub post_item {
   my $id = shift;
   my (%args) = validated_hash(
     \@_,
+    category => { isa => 'Str', optional => 1 },
     title  => { isa => 'Str', optional => 1 },
     date => { isa => 'Str', optional => 1 },
     body => { isa => 'Str', optional => 1 },
@@ -404,7 +467,19 @@ sub post_item {
 }
 
 
-=head3 post_template
+=head3 post_template($id, ...)
+
+  my $t = $elab->post_template(4,
+                    title => "New template title",
+                    body => "Lots of text"
+        );
+
+Updates a template, overwriting previous values. The following parameters can
+be given:
+
+  title       The item title
+  date        The date
+  body        The item body text
 
 =cut
 
@@ -421,10 +496,12 @@ sub post_template {
 }
 
 
-
-=head3 upload_to_experiment
+=head3 upload_to_experiment($id, ...)
 
   my $e = $elab->upload_to_experiment(13, file => "mauterndorf.jpg");
+
+Uploads a file given by its name and appends it to the specified experiment.
+The return value is a hash reference with status information.
 
 =cut
 
@@ -451,6 +528,9 @@ sub upload_to_experiment {
 
   my $e = $elab->upload_to_item(13, file => "mauterndorf.jpg");
 
+Uploads a file given by its name and appends it to the specified database item.
+The return value is a hash reference with status information.
+
 =cut
 
 sub upload_to_item {
@@ -472,48 +552,17 @@ sub upload_to_item {
 }
 
 
-=head3 add_tag_to_experiment
+=head3 create_event(...)
 
-=cut
-
-sub add_tag_to_experiment {
-  my $self = shift;
-  my $id = shift;
-  my (%args) = validated_hash(
-    \@_,
-    tag  => { isa => 'Str' },
+  my $e = $elab->create_event(
+    start => "2019-11-30T12:00:00",
+    end   => "2019-11-30T14:00:00",
+    title => "Booked from API",
   );
-  return decode_json $self->elab_post("experiments/$id", $self->buildQuery(%args));
-}
-
-
-=head3 add_tag_to_item
-
-=cut
-
-sub add_tag_to_item {
-  my $self = shift;
-  my $id = shift;
-  my (%args) = validated_hash(
-    \@_,
-    tag  => { isa => 'Str' },
-  );
-  return decode_json $self->elab_post("items/$id", $self->buildQuery(%args));
-}
-
-
-=head3 get_bookable
-
-=cut
-
-sub get_bookable {
-  my $self = shift;
-  return decode_json $self->elab_get("bookable/");
-}
-
-
-=head3 create_event
-
+  
+Creates an event in the scheduler for a bookable item. The return value is
+a hash reference with status information and the id of the generated event.
+  
 =cut
 
 sub create_event {
@@ -529,18 +578,26 @@ sub create_event {
 }
 
 
-=head3 get_event
+=head3 destroy_event($id)
 
+  my $e = $elab->destroy_event(1);
+
+Deletes the event with the given id.
+  
 =cut
 
-sub get_event {
+sub destroy_event {
   my $self = shift;
   my $id = shift;
-  return decode_json $self->elab_get("events/$id");
+  return decode_json $self->elab_delete("events/$id");
 }
 
 
-=head3 get_all_events
+=head3 get_all_events()
+
+  my $e = $elab->get_all_events();
+
+Returns a list reference with information on all events.
 
 =cut
 
@@ -550,15 +607,20 @@ sub get_all_events {
 }
 
 
-=head3 destroy_event
+=head3 get_event($id)
+
+  my $e = $elab->get_event(1);
+
+Returns a hash reference with information on the event specified by id.
 
 =cut
 
-sub destroy_event {
+sub get_event {
   my $self = shift;
   my $id = shift;
-  return decode_json $self->elab_delete("events/$id");
+  return decode_json $self->elab_get("events/$id");
 }
+
 
 
 =head2 Low-level methods
